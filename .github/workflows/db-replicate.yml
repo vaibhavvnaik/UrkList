@@ -1,0 +1,49 @@
+name: Replicate Production DB to Dev and Preview
+
+on:
+  schedule:
+    - cron: '0 * * * *'   # Every hour
+  workflow_dispatch:        # Allow manual trigger
+
+jobs:
+  replicate:
+    name: Dump prod and restore to dev/preview
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Install MongoDB Database Tools
+        run: |
+          wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
+          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update -qq
+          sudo apt-get install -y mongodb-database-tools
+
+      - name: Dump production database (urklist)
+        run: |
+          mongodump --uri="${{ secrets.MONGODB_URI_PROD }}" --out=/tmp/prod_dump
+          echo "Dump complete"
+
+      - name: Restore to preview database (urklist_preview)
+        run: |
+          mongorestore \
+            --uri="${{ secrets.MONGODB_URI_PREVIEW }}" \
+            --drop \
+            --nsFrom="urklist.*" \
+            --nsTo="urklist_preview.*" \
+            /tmp/prod_dump
+          echo "Preview restore complete"
+
+      - name: Restore to development database (urklist_dev)
+        run: |
+          mongorestore \
+            --uri="${{ secrets.MONGODB_URI_DEV }}" \
+            --drop \
+            --nsFrom="urklist.*" \
+            --nsTo="urklist_dev.*" \
+            /tmp/prod_dump
+          echo "Dev restore complete"
+
+      - name: Cleanup dump
+        if: always()
+        run: rm -rf /tmp/prod_dump
