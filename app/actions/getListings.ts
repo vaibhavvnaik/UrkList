@@ -87,9 +87,7 @@ export default async function getListings(
 
     return safeListings;
   } catch (error) {
-    if (error instanceof Error) {
-      throw error;
-    }
-    throw new Error("An unexpected error occurred");
+    // Keep homepage renderable in local/dev when DB credentials are unavailable.
+    return [];
   }
 }

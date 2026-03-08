@@ -62,6 +62,24 @@ const ListingDetail: React.FC<ListingDetailProps> = ({
     );
   };
 
+  const isLikelyUrl = (value?: string | null) => {
+    if (!value) return false;
+    const trimmed = value.trim().toLowerCase();
+    return trimmed.startsWith("http://") || trimmed.startsWith("https://");
+  };
+
+  const isKnownScreenshotUrl = (value?: string | null) => {
+    if (!value) return false;
+    const trimmed = value.trim().toLowerCase();
+    const bucketBase = process.env.NEXT_PUBLIC_BACKBLAZE_BUCKET_URL?.toLowerCase();
+
+    if (bucketBase && trimmed.startsWith(bucketBase)) {
+      return true;
+    }
+
+    return trimmed.includes("/screenshots/");
+  };
+
   const withBaseTargetBlank = (html: string) => {
     const baseTag = '<base target="_blank" rel="noopener noreferrer">';
     if (/<base\s/i.test(html)) return html;
@@ -71,13 +89,23 @@ const ListingDetail: React.FC<ListingDetailProps> = ({
     return `${baseTag}${html}`;
   };
 
-  const inlineHtmlSource = (listing.htmlContent && isLikelyInlineHtml(listing.htmlContent))
-    ? listing.htmlContent
-    : (isLikelyInlineHtml(listing.content) ? listing.content : null);
-
-  const remoteHtmlUrl = !inlineHtmlSource && listing.content && !isLikelyImageUrl(listing.content)
-    ? listing.content
-    : null;
+  const htmlCandidate =
+    listing.htmlContent?.trim() ||
+    (isLikelyInlineHtml(listing.content) ||
+    (isLikelyUrl(listing.content) &&
+      !isLikelyImageUrl(listing.content) &&
+      !isKnownScreenshotUrl(listing.content))
+      ? listing.content
+      : null);
+  const inlineHtmlSource = isLikelyInlineHtml(htmlCandidate) ? htmlCandidate : null;
+  const remoteHtmlUrl =
+    !inlineHtmlSource &&
+    isLikelyUrl(htmlCandidate) &&
+    !isLikelyImageUrl(htmlCandidate) &&
+    !isKnownScreenshotUrl(htmlCandidate)
+      ? htmlCandidate
+      : null;
+  const noHtmlAvailable = !inlineHtmlSource && !remoteHtmlUrl;
 
   useEffect(() => {
     if (!inlineHtmlSource || !iframeRef.current) return;
@@ -107,10 +135,6 @@ const ListingDetail: React.FC<ListingDetailProps> = ({
     minute: 'numeric',
     hour12: true,
   });
-
-  const screenshotUrl = listing.slugifyTitle
-    ? `${process.env.NEXT_PUBLIC_BACKBLAZE_BUCKET_URL}/${listing.slugifyTitle}-${listing.id}.png`
-    : listing.content;
 
   return (
     <div className="max-w-4xl mx-auto">
@@ -186,15 +210,22 @@ const ListingDetail: React.FC<ListingDetailProps> = ({
             sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
             title={`Email: ${listing.title}`}
           />
-        ) : (
-          <img
-            src={screenshotUrl}
-            alt={listing.title}
-            className="w-full"
-            loading="lazy"
-          />
-        )}
+        ) : noHtmlAvailable ? (
+          <div className="p-8 text-center">
+            <h2 className="text-base font-semibold text-neutral-800">Original newsletter HTML unavailable</h2>
+            <p className="mt-2 text-sm text-neutral-500">
+              This listing does not have a renderable HTML source yet, so clickable newsletter links cannot be shown for this item.
+            </p>
+          </div>
+        ) : null}
       </div>
+
+      {noHtmlAvailable && (
+        <div className="mt-3 text-sm text-amber-700 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3">
+          We could not fetch the original newsletter markup for this listing.
+          {listing.brand.siteURL ? " You can still visit the brand site below." : ""}
+        </div>
+      )}
 
       {/* Visit brand */}
       {listing.brand.siteURL && (
