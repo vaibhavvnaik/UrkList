@@ -1,32 +1,24 @@
-name: Replicate Production DB to Preview and Dev
-
+name: Replicate Production DB to Dev and Preview
 on:
-  workflow_dispatch:
   schedule:
-    - cron: '0 2 * * *'
-
+    - cron: '0 * * * *' # Every hour
+  workflow_dispatch: # Allow manual trigger
 jobs:
-  replicate-db:
+  replicate:
+    name: Dump prod and restore to dev/preview
     runs-on: ubuntu-latest
-
+    timeout-minutes: 30
     steps:
-      - name: Install MongoDB tools
+      - name: Install MongoDB Database Tools
         run: |
           wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
-          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-          sudo apt-get update
+          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update -qq
           sudo apt-get install -y mongodb-database-tools
-          mongodump --version
-          mongorestore --version
-
-      - name: Dump production database
+      - name: Dump production database (urklist)
         run: |
-          mongodump \
-            --uri="${{ secrets.MONGODB_URI_PROD }}" \
-            --out=/tmp/prod_dump
+          mongodump --uri="${{ secrets.MONGODB_URI_PROD }}" --out=/tmp/prod_dump
           echo "Dump complete"
-          ls /tmp/prod_dump/
-
       - name: Restore to preview database (urklist_preview)
         run: |
           mongorestore \
@@ -35,7 +27,6 @@ jobs:
             --db=urklist_preview \
             /tmp/prod_dump/urklist
           echo "Preview restore complete"
-
       - name: Restore to development database (urklist_dev)
         run: |
           mongorestore \
@@ -44,3 +35,6 @@ jobs:
             --db=urklist_dev \
             /tmp/prod_dump/urklist
           echo "Dev restore complete"
+      - name: Cleanup dump
+        if: always()
+        run: rm -rf /tmp/prod_dump
