@@ -18,9 +18,15 @@
 
 const { MongoClient } = require('mongodb');
 
-// === CONNECTION STRINGS ===
-const OLD_URI = 'mongodb+srv://vercel-admin-user-64bd2c9c41340c4e658fdb81:cpwrb5TioMGnUkqc@produrklistcluster.rnf8hcf.mongodb.net/?retryWrites=true&w=majority';
-const NEW_URI = 'mongodb+srv://produrklistdb:v7Iv1uUsJtXsvghU@produrklistcluster.s2xouwd.mongodb.net/?retryWrites=true&w=majority';
+// === CONNECTION STRINGS (from environment variables) ===
+const OLD_URI = process.env.OLD_MONGODB_URI;
+const NEW_URI = process.env.NEW_MONGODB_URI;
+
+if (!OLD_URI || !NEW_URI) {
+  console.error('Error: OLD_MONGODB_URI and NEW_MONGODB_URI environment variables must be set.');
+  console.error('Usage: OLD_MONGODB_URI="mongodb+srv://..." NEW_MONGODB_URI="mongodb+srv://..." node migrate-mongodb.js');
+  process.exit(1);
+}
 
 const DATABASE_NAME = 'urklist';
 
@@ -152,8 +158,7 @@ async function migrate() {
     }
     console.log(`\nTotal documents migrated: ${totalDocs}`);
     console.log('\n✓ Migration complete!');
-    console.log('\nNew connection string for your app:');
-    console.log(`mongodb+srv://produrklistdb:v7Iv1uUsJtXsvghU@produrklistcluster.s2xouwd.mongodb.net/urklist?retryWrites=true&w=majority`);
+    console.log('\nMigration complete. Use your NEW_MONGODB_URI connection string in your app configuration.');
 
   } catch (error) {
     console.error('\n✗ Migration failed:', error.message);

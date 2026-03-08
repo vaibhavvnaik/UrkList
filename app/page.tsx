@@ -5,6 +5,8 @@ import getListings from "@/app/actions/getListings";
 import getCurrentUser from "@/app/actions/getCurrentUser";
 import InfiniteListings from "@/app/components/listings/InfiniteListings";
 
+export const dynamic = 'force-dynamic';
+
 export interface IListingsParams {
   category?: string;
   startDate?: string;
