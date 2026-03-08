@@ -37,3 +37,12 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# nested repos
+access-onboarding-repo/
+brand-agent-railway/
+fnl_reader/
+ip/
+nextjs-tutorials/
+urk/
+vaibhavvnaik/
