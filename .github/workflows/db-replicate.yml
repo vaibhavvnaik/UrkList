@@ -1,38 +1,39 @@
-name: Replicate Production DB to Dev and Preview
+name: Replicate Production DB to Preview and Dev
 
 on:
+  workflow_dispatch:
   schedule:
-    - cron: '0 * * * *' # Every hour
-  workflow_dispatch: # Allow manual trigger
+    - cron: '0 2 * * *'
 
 jobs:
-  replicate:
-    name: Dump prod and restore to dev/preview
+  replicate-db:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
 
     steps:
-      - name: Install MongoDB Database Tools
+      - name: Install MongoDB tools
         run: |
           wget -qO - https://www.mongodb.org/static/pgp/server-7.0.asc | sudo apt-key add -
-          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu focal/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
-          sudo apt-get update -qq
+          echo "deb [ arch=amd64,arm64 ] https://repo.mongodb.org/apt/ubuntu jammy/mongodb-org/7.0 multiverse" | sudo tee /etc/apt/sources.list.d/mongodb-org-7.0.list
+          sudo apt-get update
           sudo apt-get install -y mongodb-database-tools
+          mongodump --version
+          mongorestore --version
 
-      - name: Dump production database (urklist)
+      - name: Dump production database
         run: |
-          mongodump --uri="${{ secrets.MONGODB_URI_PROD }}" --out=/tmp/prod_dump
+          mongodump \
+            --uri="${{ secrets.MONGODB_URI_PROD }}" \
+            --out=/tmp/prod_dump
           echo "Dump complete"
+          ls /tmp/prod_dump/
 
       - name: Restore to preview database (urklist_preview)
         run: |
           mongorestore \
             --uri="${{ secrets.MONGODB_URI_PREVIEW }}" \
             --drop \
-            --nsInclude="urklist.*" \
-            --nsFrom="urklist.*" \
-            --nsTo="urklist_preview.*" \
-            /tmp/prod_dump
+            --db=urklist_preview \
+            /tmp/prod_dump/urklist
           echo "Preview restore complete"
 
       - name: Restore to development database (urklist_dev)
@@ -40,12 +41,6 @@ jobs:
           mongorestore \
             --uri="${{ secrets.MONGODB_URI_DEV }}" \
             --drop \
-            --nsInclude="urklist.*" \
-            --nsFrom="urklist.*" \
-            --nsTo="urklist_dev.*" \
-            /tmp/prod_dump
+            --db=urklist_dev \
+            /tmp/prod_dump/urklist
           echo "Dev restore complete"
-
-      - name: Cleanup dump
-        if: always()
-        run: rm -rf /tmp/prod_dump
