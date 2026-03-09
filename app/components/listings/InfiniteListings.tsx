@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { SafeListing, SafeUser } from '@/app/types';
 import ListingCard from './ListingCard';
+import useLoginModal from '@/app/hooks/useLoginModal';
 import useRegisterModal from '@/app/hooks/useRegisterModal';
 import qs from 'query-string';
 import { GUEST_LISTING_LIMIT, LISTINGS_PAGE_SIZE } from '@/app/config/listings';
@@ -33,6 +34,7 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
   const [loading, setLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const registerModal = useRegisterModal();
+  const loginModal = useLoginModal();
 
   const isGuestLimitReached = !currentUser && listings.length >= GUEST_LISTING_LIMIT;
 
@@ -119,21 +121,39 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
           <p className="text-lg text-neutral-600 text-center">
             Sign up to browse all listings
           </p>
-          <button
-            onClick={() => registerModal.onOpen()}
-            className="
-              bg-rose-500
-              hover:bg-rose-600
-              text-white
-              font-semibold
-              py-3
-              px-8
-              rounded-lg
-              transition
-            "
-          >
-            Sign up
-          </button>
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button
+              onClick={() => registerModal.onOpen()}
+              className="
+                bg-rose-500
+                hover:bg-rose-600
+                text-white
+                font-semibold
+                py-3
+                px-8
+                rounded-lg
+                transition
+              "
+            >
+              Sign up
+            </button>
+            <button
+              onClick={() => loginModal.onOpen()}
+              className="
+                border
+                border-neutral-200
+                hover:border-neutral-400
+                text-neutral-600
+                font-semibold
+                py-3
+                px-8
+                rounded-lg
+                transition
+              "
+            >
+              Log in
+            </button>
+          </div>
         </div>
       ) : (
         <>
