@@ -62,13 +62,20 @@ const ListingDetail: React.FC<ListingDetailProps> = ({
     );
   };
 
+  const upgradeToHttps = (html: string) => {
+    return html
+      .replace(/http:\/\//gi, 'https://')
+      .replace(/url\((['"]?)http:/gi, 'url($1https:');
+  };
+
   const withBaseTargetBlank = (html: string) => {
     const baseTag = '<base target="_blank" rel="noopener noreferrer">';
-    if (/<base\s/i.test(html)) return html;
-    if (/<head[^>]*>/i.test(html)) {
-      return html.replace(/<head([^>]*)>/i, `<head$1>${baseTag}`);
+    let processed = upgradeToHttps(html);
+    if (/<base\s/i.test(processed)) return processed;
+    if (/<head[^>]*>/i.test(processed)) {
+      return processed.replace(/<head([^>]*)>/i, `<head$1>${baseTag}`);
     }
-    return `${baseTag}${html}`;
+    return `${baseTag}${processed}`;
   };
 
   const inlineHtmlSource = (listing.htmlContent && isLikelyInlineHtml(listing.htmlContent))
@@ -76,7 +83,7 @@ const ListingDetail: React.FC<ListingDetailProps> = ({
     : (isLikelyInlineHtml(listing.content) ? listing.content : null);
 
   const remoteHtmlUrl = !inlineHtmlSource && listing.content && !isLikelyImageUrl(listing.content)
-    ? listing.content
+    ? listing.content.replace(/^http:\/\//i, 'https://')
     : null;
 
   useEffect(() => {

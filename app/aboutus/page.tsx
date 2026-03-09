@@ -22,13 +22,13 @@ const AboutUsPage = () => {
               <a href="/privacy.html">Privacy Policy</a>
             </div>
             <div>
-              <a href="/privacy">Cookies</a>
+              <a href="/cookies.html">Cookies</a>
             </div>
             <div>
-              <a href="/privacy">Disclaimer</a>
+              <a href="/disclaimer.html">Disclaimer</a>
             </div>
             <div>
-              <a href="/privacy">Contact Us</a>
+              <a href="/contact.html">Contact Us</a>
             </div>
           </div>
         </Container>

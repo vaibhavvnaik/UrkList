@@ -18,6 +18,11 @@ import Head from 'next/head';
 export const metadata = {
   title: 'Urklist.com',
   description: 'Find the deals and get inspired from newsletter',
+  icons: {
+    icon: '/favicon.ico',
+    shortcut: '/favicon.ico',
+    apple: '/apple-touch-icon.png',
+  },
 }
 
 const font = Nunito({ 
