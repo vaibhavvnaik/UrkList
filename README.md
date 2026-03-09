@@ -1,4 +1,4 @@
-# urk — Promotional Newsletter Aggregator 
+# urk — Promotional Newsletter Aggregator  
 
 > **Live at [urklist.com](https://urklist.com)** — a unified feed of brand promotional emails, organized by category so you never miss a deal.
 
