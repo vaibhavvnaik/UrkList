@@ -9,7 +9,7 @@ export async function POST(
   const currentUser = await getCurrentUser();
 
   if (!currentUser) {
-    return NextResponse.error();
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
 
   const body = await request.json();
@@ -21,7 +21,7 @@ export async function POST(
    } = body;
 
    if (!listingId || !startDate || !endDate || !totalPrice) {
-    return NextResponse.error();
+    return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
   }
 
   const listingAndReservation = await prisma.listing.update({

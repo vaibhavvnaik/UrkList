@@ -33,7 +33,7 @@ export default async function getListingById(
 
     return {
       ...listing,
-      createdAt: listing.createdAt.toString(),
+      createdAt: listing.createdAt.toISOString(),
       receivedAt: listing.receivedAt?.toISOString() ?? null,
       // Phase 1: include new fields
       htmlContent: listing.htmlContent ?? null,
@@ -41,9 +41,9 @@ export default async function getListingById(
       discountText: listing.discountText ?? null,
       user: {
         ...listing.user,
-        createdAt: listing.user.createdAt.toString(),
-        updatedAt: listing.user.updatedAt.toString(),
-        emailVerified: listing.user.emailVerified?.toString() || null,
+        createdAt: listing.user.createdAt.toISOString(),
+        updatedAt: listing.user.updatedAt.toISOString(),
+        emailVerified: listing.user.emailVerified?.toISOString() || null,
       }
     };
   } catch (error) {

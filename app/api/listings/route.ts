@@ -26,7 +26,7 @@ export async function POST(
 ) {
   const currentUser = await getCurrentUser();
   if (!currentUser) {
-    return NextResponse.error();
+    return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
   }
   const body = await request.json();
   const {
@@ -36,13 +36,13 @@ export async function POST(
     createdAt,
     content,
     brandId,
-    userId,
   } = body;
-  Object.keys(body).forEach((value: any) => {
-    if (!body[value]) {
-      NextResponse.error();
+  const requiredFields = { title, slugifyTitle, brandEmail, createdAt, content, brandId };
+  for (const [key, value] of Object.entries(requiredFields)) {
+    if (!value) {
+      return NextResponse.json({ error: `Missing required field: ${key}` }, { status: 400 });
     }
-  });
+  }
   const listing = await prisma.listing.create({
     data: {
       title,
