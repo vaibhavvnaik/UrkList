@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcrypt";
 
 import prisma from "@/app/libs/prismadb";
 import getCurrentUser from "@/app/actions/getCurrentUser";
-import { NextApiRequest, NextApiResponse } from "next";
 
-export async function GET(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export async function GET() {
 
   const currentUser = await getCurrentUser();
 
@@ -18,10 +13,10 @@ export async function GET(
 
   try {
     const brands = await prisma.brand.findMany();
-    res.status(200).json(brands);
+    return NextResponse.json(brands);
   }
   catch (error) {
-    res.status(500).json({ error: 'Internal server error' });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
