@@ -6,14 +6,15 @@ import getAllBrands from "@/app/actions/getAllBrands";
 import BrandCard from "@/app/components/brands/BrandCard";
 
 interface BrandsPageProps {
-  searchParams: {
+  searchParams: Promise<{
     category?: string;
-  };
+  }>;
 }
 
 const BrandsPage = async ({ searchParams }: BrandsPageProps) => {
+  const resolvedSearchParams = await searchParams;
   const currentUser = await getCurrentUser();
-  const brands = await getAllBrands({ category: searchParams.category });
+  const brands = await getAllBrands({ category: resolvedSearchParams.category });
 
   if (brands.length === 0) {
     return (

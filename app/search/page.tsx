@@ -6,15 +6,16 @@ import getCurrentUser from "@/app/actions/getCurrentUser";
 import InfiniteListings from "@/app/components/listings/InfiniteListings";
 
 interface SearchPageProps {
-  searchParams: {
+  searchParams: Promise<{
     query?: string;
     category?: string;
     page?: number;
-  };
+  }>;
 }
 
 const SearchPage = async ({ searchParams }: SearchPageProps) => {
-  const { query, category } = searchParams;
+  const resolvedSearchParams = await searchParams;
+  const { query, category } = resolvedSearchParams;
   const currentUser = await getCurrentUser();
 
   if (!query || query.trim().length === 0) {
@@ -64,7 +65,7 @@ const SearchPage = async ({ searchParams }: SearchPageProps) => {
           </div>
           <InfiniteListings
             initialListings={listings}
-            searchParams={{ ...searchParams, query }}
+            searchParams={{ ...resolvedSearchParams, query }}
             currentUser={currentUser}
           />
         </div>

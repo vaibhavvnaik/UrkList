@@ -1,6 +1,5 @@
+import { LISTINGS_PAGE_SIZE } from "@/app/config/listings";
 import prisma from "@/app/libs/prismadb";
-
-const PAGE_SIZE = 24;
 
 export interface IListingsParams {
   category?: string;
@@ -24,7 +23,7 @@ export default async function getListings(
       brandSlug,
     } = params;
 
-    const skip = (page - 1) * PAGE_SIZE;
+    const skip = (page - 1) * LISTINGS_PAGE_SIZE;
 
     // Build the where clause dynamically
     const where: any = {
@@ -76,7 +75,7 @@ export default async function getListings(
         { createdAt: "desc" },
       ],
       skip,
-      take: PAGE_SIZE,
+      take: LISTINGS_PAGE_SIZE,
     });
 
     const safeListings = listings.map((listing) => ({

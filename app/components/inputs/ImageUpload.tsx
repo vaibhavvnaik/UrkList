@@ -17,9 +17,7 @@ interface ImageUploadProps {
 }
 
 type UploadResult = {
-  info?: {
-    secure_url?: string;
-  };
+  info?: unknown;
 };
 
 const ImageUpload: React.FC<ImageUploadProps> = ({
@@ -27,7 +25,11 @@ const ImageUpload: React.FC<ImageUploadProps> = ({
   value
 }) => {
   const handleUpload = useCallback((result: UploadResult) => {
-    const url = result?.info?.secure_url;
+    const info =
+      result?.info && typeof result.info === "object"
+        ? (result.info as { secure_url?: unknown })
+        : undefined;
+    const url = info?.secure_url;
     if (typeof url === "string") {
       onChange(url);
     }

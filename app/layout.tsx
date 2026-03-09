@@ -13,7 +13,6 @@ import './globals.css'
 import ClientOnly from './components/ClientOnly';
 import GoogleAnalytics from './components/GoogleAnalytics';
 import getCurrentUser from './actions/getCurrentUser';
-import Head from 'next/head';
 
 export const metadata = {
   title: 'Urklist.com',
@@ -24,6 +23,8 @@ const font = Nunito({
   subsets: ['latin'], 
 });
 
+export const dynamic = 'force-dynamic';
+
 export default async function RootLayout({
   children,
 }: {
@@ -33,10 +34,8 @@ export default async function RootLayout({
 
   return (
     <html lang="en">
-      <Head>
-        <GoogleAnalytics />
-      </Head>
       <body className={font.className}>
+        <GoogleAnalytics />
         <ClientOnly>
           <ToasterProvider />
           <LoginModal />

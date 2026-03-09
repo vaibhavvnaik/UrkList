@@ -8,18 +8,21 @@ import InfiniteListings from "@/app/components/listings/InfiniteListings";
 import BrandHeader from "@/app/components/brands/BrandHeader";
 
 interface BrandPageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
-  searchParams: {
+  }>;
+  searchParams: Promise<{
     startDate?: string;
     endDate?: string;
     page?: number;
-  };
+  }>;
 }
 
 const BrandPage = async ({ params, searchParams }: BrandPageProps) => {
-  const brand = await getBrandBySlug(params.slug);
+  const resolvedParams = await params;
+  const resolvedSearchParams = await searchParams;
+
+  const brand = await getBrandBySlug(resolvedParams.slug);
   const currentUser = await getCurrentUser();
 
   if (!brand) {
@@ -37,8 +40,8 @@ const BrandPage = async ({ params, searchParams }: BrandPageProps) => {
   }
 
   const listings = await getListings({
-    ...searchParams,
-    brandSlug: params.slug,
+    ...resolvedSearchParams,
+    brandSlug: resolvedParams.slug,
   });
 
   return (
@@ -54,7 +57,7 @@ const BrandPage = async ({ params, searchParams }: BrandPageProps) => {
           ) : (
             <InfiniteListings
               initialListings={listings}
-              searchParams={{ ...searchParams, brandSlug: params.slug }}
+              searchParams={{ ...resolvedSearchParams, brandSlug: resolvedParams.slug }}
               currentUser={currentUser}
             />
           )}

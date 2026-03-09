@@ -1,75 +1,55 @@
-name: Claude Code
+name: Claude Issue Builder
 
 on:
   issues:
-    types: [labeled]
-  issue_comment:
-    types: [created]
-  pull_request_review_comment:
-    types: [created]
-  pull_request_review:
-    types: [submitted]
+    types: [opened]
 
 concurrency:
-  group: claude-${{ github.repository }}-${{ github.event.issue.number || github.event.pull_request.number || github.ref }}
+  group: claude-${{ github.repository }}-issue-${{ github.event.issue.number }}
   cancel-in-progress: false
 
 jobs:
-  claude:
-    if: >-
-      (github.event_name == 'issues' &&
-       github.event.label.name == 'claude' &&
-       github.event.sender.login == github.repository_owner) ||
-      (github.event_name == 'issue_comment' &&
-       contains(github.event.comment.body, '@claude') &&
-       contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association)) ||
-      (github.event_name == 'pull_request_review' &&
-       contains(github.event.review.body, '@claude') &&
-       contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.review.author_association)) ||
-      (github.event_name == 'pull_request_review_comment' &&
-       contains(github.event.comment.body, '@claude') &&
-       contains(fromJson('["OWNER","MEMBER","COLLABORATOR"]'), github.event.comment.author_association))
-
+  work_on_issue:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
-      pull-requests: read
-      issues: read
+      contents: write
+      pull-requests: write
+      issues: write
       actions: read
       id-token: write
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
-          fetch-depth: 1
-          persist-credentials: false
+          fetch-depth: 0
+          persist-credentials: true
 
-      - name: Run Claude Code
+      - name: Run Claude Code automation
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          additional_permissions: |
-            actions: read
+          base_branch: main
+          branch_prefix: ''
+          branch_name_template: '{{label}}/{{entityType}}-{{entityNumber}}-{{description}}'
           prompt: |
-            **IMPORTANT - WHEN WORKING ON ISSUES:**
-            After implementing code changes and committing, create a pull request and include:
-            - A concise summary of what was implemented
-            - "Closes #${{ github.event.issue.number }}" in the PR body
+            ISSUE CONTEXT:
+            - Number: #${{ github.event.issue.number }}
+            - Title: ${{ github.event.issue.title }}
+            - Body:
+            ${{ github.event.issue.body }}
 
-            **COMMIT RULES:**
-            - Do not add co-author attributions
-            - Do not add generated-by attributions
-            - Keep commit messages clear and professional
+            AUTOMATION PLAN:
+            1. Treat this issue as the spec, create a new working branch off `main`, and keep all changes scoped to what the description asks for.
+            2. Make sure the issue has a type label (feat, bug, etc.); use the first label as the prefix and keep the branch name pattern `{{label}}/{{entityType}}-{{entityNumber}}-{{description}}` (e.g., `feat/issue-1234-add-cta`).
+            3. Implement the fix or enhancement, updating docs or tests if needed and keeping commits clean.
+            4. Run `npm run lint` and `npm run build`. If either command fails, report the failure details and refrain from pushing the branch.
+            5. Commit with an imperative, descriptive message that references the issue number (e.g., "Address issue #1234: ...").
+            6. Push the resulting branch so Vercel can build a preview environment tied to that branch.
+            7. Leave an issue comment summarizing the change, the tests you ran, the branch name, and a note that the Vercel preview will be available once it finishes building.
 
-            **WHEN WORKING ON PR FEEDBACK:**
-            Make requested changes and commit to the same PR branch.
-
-            **WHEN FIXING CI FAILURES:**
-            Fix failures and commit; CI will re-run automatically.
-
-          track_progress: true
+            When you comment, rely on the action's pre-filled PR link instead of opening the PR yourself; the comment should give me enough context to review the preview deployment and create the PR if everything looks good.
           claude_args: |
             --model "claude-opus-4-5"
             --max-turns 100
-            --allowedTools "Bash(git:*),Bash(gh issue:*),Bash(gh pr:*),Bash(gh repo:*),Bash(npm:*),Bash(npx:*),Edit,Write,Read,Glob,Grep,LS,WebSearch,WebFetch"
+            --allowedTools "Read,Write,Edit,Bash(git:*),Bash(gh issue comment:*),Bash(npm run lint),Bash(npm run build)"

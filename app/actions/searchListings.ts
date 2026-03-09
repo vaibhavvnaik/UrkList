@@ -1,6 +1,5 @@
+import { LISTINGS_PAGE_SIZE } from "@/app/config/listings";
 import prisma from "@/app/libs/prismadb";
-
-const PAGE_SIZE = 24;
 
 export interface ISearchParams {
   query: string;
@@ -11,7 +10,7 @@ export interface ISearchParams {
 export default async function searchListings(params: ISearchParams) {
   try {
     const { query, category, page = 1 } = params;
-    const skip = (page - 1) * PAGE_SIZE;
+    const skip = (page - 1) * LISTINGS_PAGE_SIZE;
 
     if (!query || query.trim().length === 0) {
       return [];
@@ -45,7 +44,7 @@ export default async function searchListings(params: ISearchParams) {
         { createdAt: 'desc' },
       ],
       skip,
-      take: PAGE_SIZE,
+      take: LISTINGS_PAGE_SIZE,
     });
 
     return listings.map((listing) => ({

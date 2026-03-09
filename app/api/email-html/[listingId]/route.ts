@@ -7,10 +7,10 @@ interface IParams {
 
 export async function GET(
   request: Request,
-  { params }: { params: IParams }
+  { params }: { params: Promise<IParams> }
 ) {
   try {
-    const { listingId } = params;
+    const { listingId } = await params;
 
     if (!listingId || typeof listingId !== 'string') {
       return new NextResponse('Invalid listing ID', { status: 400 });
