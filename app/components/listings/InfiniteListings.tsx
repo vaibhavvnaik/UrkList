@@ -3,9 +3,9 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { SafeListing, SafeUser } from '@/app/types';
 import ListingCard from './ListingCard';
+import useRegisterModal from '@/app/hooks/useRegisterModal';
 import qs from 'query-string';
-
-const PAGE_SIZE = 24;
+import { GUEST_LISTING_LIMIT, LISTINGS_PAGE_SIZE } from '@/app/config/listings';
 
 interface IListingsParams {
   category?: string;
@@ -29,12 +29,17 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
 }) => {
   const [listings, setListings] = useState<SafeListing[]>(initialListings);
   const [page, setPage] = useState(1);
-  const [hasMore, setHasMore] = useState(initialListings.length === PAGE_SIZE);
+  const [hasMore, setHasMore] = useState(initialListings.length === LISTINGS_PAGE_SIZE);
   const [loading, setLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const registerModal = useRegisterModal();
+
+  const isGuestLimitReached = !currentUser && listings.length >= GUEST_LISTING_LIMIT;
 
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
+    if (!currentUser && listings.length >= GUEST_LISTING_LIMIT) return;
+
     setLoading(true);
 
     const nextPage = page + 1;
@@ -47,12 +52,18 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
       const res = await fetch(`/api/listings?${queryString}`);
       const newListings = await res.json();
 
-      if (!Array.isArray(newListings) || newListings.length < PAGE_SIZE) {
+      if (!Array.isArray(newListings) || newListings.length < LISTINGS_PAGE_SIZE) {
         setHasMore(false);
       }
 
       if (Array.isArray(newListings)) {
-        setListings((prev) => [...prev, ...newListings]);
+        setListings((prev) => {
+          const combined = [...prev, ...newListings];
+          if (!currentUser && combined.length >= GUEST_LISTING_LIMIT) {
+            return combined.slice(0, GUEST_LISTING_LIMIT);
+          }
+          return combined;
+        });
       }
 
       setPage(nextPage);
@@ -62,11 +73,11 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
     }
 
     setLoading(false);
-  }, [loading, hasMore, page, searchParams]);
+  }, [loading, hasMore, page, searchParams, currentUser, listings.length]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+    if (!sentinel || isGuestLimitReached) return;
 
     const observer = new IntersectionObserver(
       (entries) => {
@@ -78,7 +89,7 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
-  }, [loadMore]);
+  }, [loadMore, isGuestLimitReached]);
 
   return (
     <>
@@ -103,11 +114,36 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
           />
         ))}
       </div>
-      <div ref={sentinelRef} className="h-10 mt-4" />
-      {loading && (
-        <div className="flex justify-center py-4 text-neutral-500">
-          Loading...
+      {isGuestLimitReached ? (
+        <div className="flex flex-col items-center justify-center py-12 gap-4">
+          <p className="text-lg text-neutral-600 text-center">
+            Sign up to browse all listings
+          </p>
+          <button
+            onClick={() => registerModal.onOpen()}
+            className="
+              bg-rose-500
+              hover:bg-rose-600
+              text-white
+              font-semibold
+              py-3
+              px-8
+              rounded-lg
+              transition
+            "
+          >
+            Sign up
+          </button>
         </div>
+      ) : (
+        <>
+          <div ref={sentinelRef} className="h-10 mt-4" />
+          {loading && (
+            <div className="flex justify-center py-4 text-neutral-500">
+              Loading...
+            </div>
+          )}
+        </>
       )}
     </>
   );
