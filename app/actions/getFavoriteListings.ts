@@ -15,7 +15,14 @@ export default async function getFavoriteListings() {
         id: {
           in: [...(currentUser.favoriteIds || [])]
         }
-      }
+      },
+      include: {
+        brand: {
+          include: {
+            category: true,
+          },
+        },
+      },
     });
 
     const safeFavorites = favorites.map((favorite) => ({
