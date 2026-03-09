@@ -6,9 +6,10 @@ import GoogleProvider from "next-auth/providers/google"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 
 import prisma from "@/app/libs/prismadb"
-// Dynamically set NEXTAUTH_URL for Vercel preview deployments
-if (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_BRANCH_URL) {
-    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_BRANCH_URL}`
+// Route all OAuth through production to avoid registering every preview branch in GCP.
+// Only one redirect URI needed: https://www.urklist.com/api/auth/callback/google
+if (process.env.VERCEL_ENV === 'preview') {
+    process.env.NEXTAUTH_URL = 'https://www.urklist.com'
 }
 
 
