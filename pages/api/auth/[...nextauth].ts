@@ -68,8 +68,8 @@ export const authOptions: AuthOptions = {
   secret: process.env.NEXTAUTH_SECRET,
     // Route OAuth callbacks through production to avoid registering every preview URL in GCP.
     // Only 2 GCP redirect URIs needed: https://www.urklist.com/api/auth/callback/google + localhost.
-    ...(process.env.AUTH_REDIRECT_PROXY_URL && {
-        redirectProxyUrl: process.env.AUTH_REDIRECT_PROXY_URL,
+    ...(process.env.VERCEL_ENV === 'preview' && {
+        redirectProxyUrl: 'https://www.urklist.com/api/auth',
     }),
 }
 
