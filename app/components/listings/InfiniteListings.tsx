@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { SafeListing, SafeUser } from '@/app/types';
 import ListingCard from './ListingCard';
+import SignupPrompt from './SignupPrompt';
+import { useListingViewLimit } from '@/app/hooks/useListingViewLimit';
 import qs from 'query-string';
 
 const PAGE_SIZE = 24;
@@ -32,9 +34,18 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
   const [hasMore, setHasMore] = useState(initialListings.length === PAGE_SIZE);
   const [loading, setLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
+  const { trackListings, hasReachedLimit, viewedCount, isInitialized } = useListingViewLimit();
+
+  // Track initial listings
+  useEffect(() => {
+    if (isInitialized && !currentUser) {
+      trackListings(initialListings.map((l) => l.id));
+    }
+  }, [isInitialized, currentUser, initialListings, trackListings]);
 
   const loadMore = useCallback(async () => {
-    if (loading || !hasMore) return;
+    // Don't load more if user has reached limit (unless logged in)
+    if (loading || !hasMore || (!currentUser && hasReachedLimit)) return;
     setLoading(true);
 
     const nextPage = page + 1;
@@ -53,6 +64,10 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
 
       if (Array.isArray(newListings)) {
         setListings((prev) => [...prev, ...newListings]);
+        // Track viewed listings for non-logged-in users
+        if (!currentUser) {
+          trackListings(newListings.map((l: SafeListing) => l.id));
+        }
       }
 
       setPage(nextPage);
@@ -62,7 +77,7 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
     }
 
     setLoading(false);
-  }, [loading, hasMore, page, searchParams]);
+  }, [loading, hasMore, page, searchParams, currentUser, hasReachedLimit, trackListings]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -103,11 +118,17 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
           />
         ))}
       </div>
-      <div ref={sentinelRef} className="h-10 mt-4" />
-      {loading && (
-        <div className="flex justify-center py-4 text-neutral-500">
-          Loading...
-        </div>
+      {!currentUser && hasReachedLimit ? (
+        <SignupPrompt viewedCount={viewedCount} />
+      ) : (
+        <>
+          <div ref={sentinelRef} className="h-10 mt-4" />
+          {loading && (
+            <div className="flex justify-center py-4 text-neutral-500">
+              Loading...
+            </div>
+          )}
+        </>
       )}
     </>
   );
