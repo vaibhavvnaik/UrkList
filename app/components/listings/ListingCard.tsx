@@ -2,25 +2,20 @@
 
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useCallback, useMemo } from "react";
-import { format } from 'date-fns';
-import React, { useEffect, useState } from 'react';
+import { useCallback } from "react";
+import React from 'react';
 
-
-import useCountries from "@/app/hooks/useCountries";
-import { 
-  SafeListing, 
-  SafeReservation, 
-  SafeUser 
+import {
+  SafeListingWithBrand,
+  SafeReservation,
+  SafeUser
 } from "@/app/types";
 
 import HeartButton from "../HeartButton";
 import Button from "../Button";
-import ClientOnly from "../ClientOnly";
-import getBrandById from "@/app/actions/getBrandById";
 
 interface ListingCardProps {
-  data: SafeListing;
+  data: SafeListingWithBrand;
   reservation?: SafeReservation;
   onAction?: (id: string) => void;
   disabled?: boolean;
@@ -40,10 +35,8 @@ const ListingCard: React.FC<ListingCardProps> = ({
   currentUser,
 }) => {
   const router = useRouter();
-  const { getByValue } = useCountries();
 
-  const [previewImage, setPreviewImage] = useState<string>('');
-const handleCancel = useCallback(
+  const handleCancel = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
 
@@ -91,19 +84,46 @@ return (
             />
           </div>
         </div>
-        <div className="font-semibold text-base">
+        <div className="font-semibold text-base line-clamp-2">
           {data.title}
         </div>
-        <div className="font-light text-neutral-500 text-sm">
+        <div className="flex items-center gap-2 mt-1">
+          {data.brand?.logo ? (
+            <div className="relative w-6 h-6 flex-shrink-0">
+              <Image
+                fill
+                className="rounded-full object-cover"
+                src={data.brand.logo}
+                alt={data.brand.name}
+              />
+            </div>
+          ) : (
+            <div className="w-6 h-6 rounded-full bg-neutral-200 flex items-center justify-center flex-shrink-0">
+              <span className="text-xs font-medium text-neutral-500">
+                {data.brand?.name?.charAt(0)?.toUpperCase() || '?'}
+              </span>
+            </div>
+          )}
+          <span
+            className="text-sm font-medium text-neutral-700 truncate hover:underline cursor-pointer"
+            onClick={(e) => {
+              e.stopPropagation();
+              if (data.brand?.slug) {
+                router.push(`/brands/${data.brand.slug}`);
+              }
+            }}
+          >
+            {data.brand?.name}
+          </span>
+        </div>
+        <div className="font-light text-neutral-500 text-xs">
           {new Date(data.receivedAt ?? data.createdAt).toLocaleString('en-US', {
-            month: 'long',
+            month: 'short',
             day: 'numeric',
             hour: 'numeric',
-            minute: 'numeric',
+            minute: '2-digit',
             hour12: true,
           })}
-        </div>
-        <div className="font-light text-neutral-500">
         </div>
         {onAction && actionLabel && (
           <Button

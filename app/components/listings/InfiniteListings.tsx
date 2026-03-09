@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { SafeListing, SafeUser } from '@/app/types';
+import { SafeListingWithBrand, SafeUser } from '@/app/types';
 import ListingCard from './ListingCard';
 import qs from 'query-string';
 
@@ -17,7 +17,7 @@ interface IListingsParams {
 }
 
 interface InfiniteListingsProps {
-  initialListings: SafeListing[];
+  initialListings: SafeListingWithBrand[];
   searchParams: IListingsParams;
   currentUser: SafeUser | null;
 }
@@ -27,7 +27,7 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
   searchParams,
   currentUser,
 }) => {
-  const [listings, setListings] = useState<SafeListing[]>(initialListings);
+  const [listings, setListings] = useState<SafeListingWithBrand[]>(initialListings);
   const [page, setPage] = useState(1);
   const [hasMore, setHasMore] = useState(initialListings.length === PAGE_SIZE);
   const [loading, setLoading] = useState(false);
