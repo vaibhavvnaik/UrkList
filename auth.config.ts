@@ -2,7 +2,6 @@ import GithubProvider from "next-auth/providers/github"
 import GoogleProvider from "next-auth/providers/google"
 import type { NextAuthConfig } from "next-auth"
 
-const allowedPreviewHostSuffix = process.env.NEXTAUTH_PREVIEW_HOST_SUFFIX?.trim()
 const redirectProxyUrl = process.env.AUTH_REDIRECT_PROXY_URL?.trim()
 
 const authConfig: NextAuthConfig = {
@@ -37,9 +36,9 @@ const authConfig: NextAuthConfig = {
         }
 
         if (
-          allowedPreviewHostSuffix &&
+          process.env.VERCEL_ENV === "preview" &&
           target.protocol === "https:" &&
-          target.hostname.endsWith(allowedPreviewHostSuffix)
+          target.hostname.endsWith(".vercel.app")
         ) {
           return url
         }
