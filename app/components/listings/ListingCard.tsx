@@ -43,6 +43,7 @@ const ListingCard: React.FC<ListingCardProps> = ({
   const { getByValue } = useCountries();
 
   const [previewImage, setPreviewImage] = useState<string>('');
+  const [imageError, setImageError] = useState(false);
 const handleCancel = useCallback(
     (e: React.MouseEvent<HTMLButtonElement>) => {
     e.stopPropagation();
@@ -68,18 +69,36 @@ return (
             rounded-xl
           "
         >
-            <Image
-              fill
-              className="
-                object-cover 
-                h-full 
-                w-full 
-                group-hover:scale-110 
-                transition
-              "
-              src={`${process.env.NEXT_PUBLIC_BACKBLAZE_BUCKET_URL}/${data.slugifyTitle!}-${data.id}.png`}
-              alt={data.title}
-            />
+            {imageError ? (
+              <div
+                className="
+                  absolute inset-0
+                  bg-gradient-to-br from-neutral-100 to-neutral-200
+                  flex items-center justify-center
+                "
+              >
+                <div className="text-center p-4">
+                  <div className="text-4xl mb-2">📧</div>
+                  <div className="text-sm text-neutral-500 font-medium">
+                    {data.title.slice(0, 50)}{data.title.length > 50 ? '...' : ''}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <Image
+                fill
+                className="
+                  object-cover
+                  h-full
+                  w-full
+                  group-hover:scale-110
+                  transition
+                "
+                src={`${process.env.NEXT_PUBLIC_BACKBLAZE_BUCKET_URL}/${data.slugifyTitle!}-${data.id}.png`}
+                alt={data.title}
+                onError={() => setImageError(true)}
+              />
+            )}
           <div className="
             absolute
             top-3
