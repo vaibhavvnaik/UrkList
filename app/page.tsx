@@ -17,11 +17,12 @@ export interface IListingsParams {
 }
 
 interface HomeProps {
-  searchParams: IListingsParams
+  searchParams: Promise<IListingsParams>
 };
 
 const Home = async ({ searchParams }: HomeProps) => {
-  const listings = await getListings(searchParams);
+  const resolvedSearchParams = await searchParams;
+  const listings = await getListings(resolvedSearchParams);
   const currentUser = await getCurrentUser();
 
   if (listings.length === 0) {
@@ -37,7 +38,7 @@ const Home = async ({ searchParams }: HomeProps) => {
       <Container>
         <InfiniteListings
           initialListings={listings}
-          searchParams={searchParams}
+          searchParams={resolvedSearchParams}
           currentUser={currentUser}
         />
       </Container>
