@@ -26,6 +26,7 @@ jobs:
           persist-credentials: true
 
       - name: Run Claude Code automation
+        id: claude
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
@@ -54,3 +55,38 @@ jobs:
             --model "claude-opus-4-5"
             --max-turns 100
             --allowedTools "Read,Write,Edit,Bash(git:*),Bash(gh issue comment:*),Bash(npm run lint),Bash(npm run build)"
+
+      - name: Surface Vercel preview deployments
+        if: ${{ secrets.VERCEL_TOKEN != '' && secrets.VERCEL_PROJECT_ID != '' }}
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+          VERCEL_TEAM_ID: ${{ secrets.VERCEL_TEAM_ID }}
+          VERCEL_BRANCH: ${{ steps.claude.outputs.branch_name }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$VERCEL_BRANCH" ]; then
+            echo "No branch name reported by Claude. Skipping Vercel lookup."
+            exit 0
+          fi
+
+          team_query=""
+          if [ -n "${VERCEL_TEAM_ID:-}" ]; then
+            team_query="&teamId=${VERCEL_TEAM_ID}"
+          fi
+
+          query="projectId=${VERCEL_PROJECT_ID}&gitBranch=${VERCEL_BRANCH}${team_query}&limit=5"
+          echo "Querying Vercel for deployments associated with branch '$VERCEL_BRANCH'..."
+          response=$(curl -sSL -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v6/deployments?${query}")
+          echo "🔍 Vercel deployments:"
+          echo "$response" | jq -c '.deployments[] | {id:.uid, url:.url, state:.state, env:.meta.env, created:.created}'
+
+          deployment_id=$(echo "$response" | jq -r '.deployments[0].uid // empty')
+          if [ -n "$deployment_id" ]; then
+            echo "✨ Fetching events for deployment $deployment_id"
+            events=$(curl -sSL -H "Authorization: Bearer $VERCEL_TOKEN" "https://api.vercel.com/v2/deployments/${deployment_id}/events")
+            echo "$events" | jq -c '.events[] | {type:.type, state:.state, createdAt:.createdAt, meta:.meta}'
+          else
+            echo "::warning::No deployment yet for branch $VERCEL_BRANCH."
+          fi
