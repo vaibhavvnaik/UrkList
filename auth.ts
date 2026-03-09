@@ -26,7 +26,12 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         password: { label: "password", type: "password" },
       },
       async authorize(credentials) {
-        if (!credentials?.email || !credentials?.password) {
+        if (
+          !credentials?.email ||
+          !credentials?.password ||
+          typeof credentials.email !== "string" ||
+          typeof credentials.password !== "string"
+        ) {
           throw new Error("Invalid credentials")
         }
 

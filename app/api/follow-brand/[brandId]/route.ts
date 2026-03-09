@@ -10,7 +10,7 @@ interface IParams {
 // POST: follow a brand
 export async function POST(
   request: Request,
-  { params }: { params: IParams }
+  { params }: { params: Promise<IParams> }
 ) {
   const currentUser = await getCurrentUser();
 
@@ -18,7 +18,7 @@ export async function POST(
     return NextResponse.error();
   }
 
-  const { brandId } = params;
+  const { brandId } = await params;
 
   if (!brandId || typeof brandId !== 'string') {
     throw new Error('Invalid brand ID');
@@ -42,7 +42,7 @@ export async function POST(
 // DELETE: unfollow a brand
 export async function DELETE(
   request: Request,
-  { params }: { params: IParams }
+  { params }: { params: Promise<IParams> }
 ) {
   const currentUser = await getCurrentUser();
 
@@ -50,7 +50,7 @@ export async function DELETE(
     return NextResponse.error();
   }
 
-  const { brandId } = params;
+  const { brandId } = await params;
 
   if (!brandId || typeof brandId !== 'string') {
     throw new Error('Invalid brand ID');

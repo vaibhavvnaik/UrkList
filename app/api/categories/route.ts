@@ -1,14 +1,9 @@
 import { NextResponse } from "next/server";
-import bcrypt from "bcrypt";
 
 import prisma from "@/app/libs/prismadb";
 import getCurrentUser from "@/app/actions/getCurrentUser";
-import { NextApiRequest, NextApiResponse } from "next";
 
-export async function GET(
-  req: NextApiRequest,
-  res: NextApiResponse
-) {
+export async function GET() {
 
   const currentUser = await getCurrentUser();
 
@@ -18,7 +13,7 @@ export async function GET(
 
   try {
     const categories = await prisma.category.findMany();
-    res.status(200).json(categories);
+    return NextResponse.json(categories);
   }
   catch (error) {
     return NextResponse.error();
