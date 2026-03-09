@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { SafeListing, SafeUser } from '@/app/types';
 import ListingCard from './ListingCard';
+import SignupPrompt from './SignupPrompt';
+import useListingViewLimit, { LISTING_LIMIT } from '@/app/hooks/useListingViewLimit';
 import qs from 'query-string';
 
 const PAGE_SIZE = 24;
@@ -33,8 +35,27 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
   const [loading, setLoading] = useState(false);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
+  const isLoggedIn = !!currentUser;
+  const {
+    hasReachedLimit,
+    trackListings,
+    viewedCount,
+  } = useListingViewLimit(isLoggedIn);
+
+  useEffect(() => {
+    if (!isLoggedIn && initialListings.length > 0) {
+      trackListings(initialListings.map((l) => l.id));
+    }
+  }, [initialListings, isLoggedIn, trackListings]);
+
+  const displayedListings = isLoggedIn
+    ? listings
+    : listings.slice(0, Math.max(LISTING_LIMIT - viewedCount + listings.length, Math.min(listings.length, LISTING_LIMIT)));
+
   const loadMore = useCallback(async () => {
     if (loading || !hasMore) return;
+    if (!isLoggedIn && hasReachedLimit) return;
+
     setLoading(true);
 
     const nextPage = page + 1;
@@ -53,6 +74,9 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
 
       if (Array.isArray(newListings)) {
         setListings((prev) => [...prev, ...newListings]);
+        if (!isLoggedIn) {
+          trackListings(newListings.map((l: SafeListing) => l.id));
+        }
       }
 
       setPage(nextPage);
@@ -62,7 +86,7 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
     }
 
     setLoading(false);
-  }, [loading, hasMore, page, searchParams]);
+  }, [loading, hasMore, page, searchParams, isLoggedIn, hasReachedLimit, trackListings]);
 
   useEffect(() => {
     const sentinel = sentinelRef.current;
@@ -80,6 +104,8 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
     return () => observer.disconnect();
   }, [loadMore]);
 
+  const shouldShowSignupPrompt = !isLoggedIn && hasReachedLimit;
+
   return (
     <>
       <div
@@ -95,7 +121,7 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
           gap-8
         "
       >
-        {listings.map((listing) => (
+        {displayedListings.map((listing) => (
           <ListingCard
             currentUser={currentUser}
             key={listing.id}
@@ -103,11 +129,17 @@ const InfiniteListings: React.FC<InfiniteListingsProps> = ({
           />
         ))}
       </div>
-      <div ref={sentinelRef} className="h-10 mt-4" />
-      {loading && (
-        <div className="flex justify-center py-4 text-neutral-500">
-          Loading...
-        </div>
+      {shouldShowSignupPrompt ? (
+        <SignupPrompt />
+      ) : (
+        <>
+          <div ref={sentinelRef} className="h-10 mt-4" />
+          {loading && (
+            <div className="flex justify-center py-4 text-neutral-500">
+              Loading...
+            </div>
+          )}
+        </>
       )}
     </>
   );
