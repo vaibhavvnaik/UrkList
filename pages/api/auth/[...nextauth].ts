@@ -6,11 +6,6 @@ import GoogleProvider from "next-auth/providers/google"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 
 import prisma from "@/app/libs/prismadb"
-// Set NEXTAUTH_URL to the stable branch alias so session cookies work on the preview domain.
-// AUTH_REDIRECT_PROXY_URL routes OAuth callbacks through production — only 2 GCP URIs needed.
-if (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_BRANCH_URL) {
-    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_BRANCH_URL}`
-}
 
 
 export const authOptions: AuthOptions = {
@@ -66,11 +61,14 @@ export const authOptions: AuthOptions = {
     strategy: "jwt",
   },
   secret: process.env.NEXTAUTH_SECRET,
-    // Route OAuth callbacks through production to avoid registering every preview URL in GCP.
-    // Only 2 GCP redirect URIs needed: https://www.urklist.com/api/auth/callback/google + localhost.
-    ...(process.env.AUTH_REDIRECT_PROXY_URL && {
-        redirectProxyUrl: process.env.AUTH_REDIRECT_PROXY_URL,
-    }),
+  // Preview deployments: Route OAuth callbacks through production using redirectProxyUrl.
+  // This avoids registering every preview URL in GCP. Only 2 redirect URIs needed:
+  // - https://www.urklist.com/api/auth/callback/google (production)
+  // - http://localhost:3000/api/auth/callback/google (local development)
+  // Set AUTH_REDIRECT_PROXY_URL=https://www.urklist.com/api/auth in preview environment.
+  ...(process.env.AUTH_REDIRECT_PROXY_URL && {
+    redirectProxyUrl: process.env.AUTH_REDIRECT_PROXY_URL,
+  }),
 }
 
 export default NextAuth(authOptions);
