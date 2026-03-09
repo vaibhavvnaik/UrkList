@@ -6,10 +6,12 @@ import { PrismaAdapter } from "@auth/prisma-adapter"
 
 import prisma from "@/app/libs/prismadb"
 
-const stableAuthUrl = process.env.NEXTAUTH_URL_PRODUCTION?.trim()
+const redirectProxyUrl = process.env.AUTH_REDIRECT_PROXY_URL?.trim()
 
-if (process.env.VERCEL_ENV === "preview" && stableAuthUrl) {
-  process.env.NEXTAUTH_URL = stableAuthUrl
+if (process.env.VERCEL_ENV === "preview" && redirectProxyUrl) {
+  try {
+    process.env.NEXTAUTH_URL = new URL(redirectProxyUrl).origin
+  } catch {}
 }
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
@@ -54,5 +56,5 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: {
     strategy: "jwt",
   },
-  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
+  secret: process.env.NEXTAUTH_SECRET,
 })
