@@ -71,16 +71,23 @@ const ListingDetail: React.FC<ListingDetailProps> = ({
     return `${baseTag}${html}`;
   };
 
-  const inlineHtmlSource = (listing.htmlContent && isLikelyInlineHtml(listing.htmlContent))
+  // If htmlContent exists, always use it — it's explicitly stored as HTML.
+  // Only apply the heuristic check to the generic `content` field.
+  const inlineHtmlSource = listing.htmlContent
     ? listing.htmlContent
     : (isLikelyInlineHtml(listing.content) ? listing.content : null);
 
-  const remoteHtmlUrl = !inlineHtmlSource && listing.content && !isLikelyImageUrl(listing.content)
+  // Fallback: use the email-html API endpoint to serve HTML from the DB
+  const emailHtmlApiUrl = !inlineHtmlSource
+    ? `/api/email-html/${listing.id}`
+    : null;
+
+  const remoteHtmlUrl = !inlineHtmlSource && !emailHtmlApiUrl && listing.content && !isLikelyImageUrl(listing.content)
     ? listing.content
     : null;
 
   useEffect(() => {
-    if (!inlineHtmlSource || !iframeRef.current) return;
+    if ((!inlineHtmlSource && !emailHtmlApiUrl) || !iframeRef.current) return;
 
     const iframe = iframeRef.current;
     const handleLoad = () => {
@@ -96,7 +103,7 @@ const ListingDetail: React.FC<ListingDetailProps> = ({
 
     iframe.addEventListener('load', handleLoad);
     return () => iframe.removeEventListener('load', handleLoad);
-  }, [inlineHtmlSource]);
+  }, [inlineHtmlSource, emailHtmlApiUrl]);
 
   const displayDate = new Date(listing.receivedAt ?? listing.createdAt).toLocaleString('en-US', {
     weekday: 'long',
@@ -172,6 +179,15 @@ const ListingDetail: React.FC<ListingDetailProps> = ({
           <iframe
             ref={iframeRef}
             srcDoc={withBaseTargetBlank(inlineHtmlSource)}
+            className="w-full border-none"
+            style={{ height: `${iframeHeight}px` }}
+            sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
+            title={`Email: ${listing.title}`}
+          />
+        ) : emailHtmlApiUrl ? (
+          <iframe
+            ref={iframeRef}
+            src={emailHtmlApiUrl}
             className="w-full border-none"
             style={{ height: `${iframeHeight}px` }}
             sandbox="allow-same-origin allow-popups allow-popups-to-escape-sandbox allow-top-navigation-by-user-activation"
