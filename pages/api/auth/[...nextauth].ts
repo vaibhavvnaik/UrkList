@@ -6,6 +6,11 @@ import GoogleProvider from "next-auth/providers/google"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 
 import prisma from "@/app/libs/prismadb"
+// Dynamically set NEXTAUTH_URL for Vercel preview deployments
+if (process.env.VERCEL_ENV === 'preview' && process.env.VERCEL_BRANCH_URL) {
+    process.env.NEXTAUTH_URL = `https://${process.env.VERCEL_BRANCH_URL}`
+}
+
 
 export const authOptions: AuthOptions = {
   adapter: PrismaAdapter(prisma),
